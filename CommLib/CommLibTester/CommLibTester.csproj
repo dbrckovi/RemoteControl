@@ -48,14 +48,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConnectionControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ConnectionControl.Designer.cs">
+      <DependentUpon>ConnectionControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="frmTester.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="frmTester.Designer.cs">
       <DependentUpon>frmTester.cs</DependentUpon>
     </Compile>
+    <Compile Include="Msgbox.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="ConnectionControl.resx">
+      <DependentUpon>ConnectionControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="frmTester.resx">
       <DependentUpon>frmTester.cs</DependentUpon>
     </EmbeddedResource>
@@ -77,6 +87,13 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="RichTextBoxExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CommLib\CommLib.csproj">
+      <Project>{5F5607A9-7AF1-4B6F-9969-F934AE83B780}</Project>
+      <Name>CommLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

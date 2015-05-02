@@ -17,7 +17,7 @@ namespace CommLibTester
     private int LISTEN_PORT = 56708;
     private Color GOOD_COLOR = Color.Black;
     private Color BAD_COLOR = Color.Red;
-    TcpManager _tcpManager = null;
+    ConnectionManager _connManager = null;
 
     public frmTester()
     {
@@ -38,11 +38,11 @@ namespace CommLibTester
     {
       try
       {
-        _tcpManager = new TcpManager(LISTEN_PORT);
-        _tcpManager.ExceptionOccured += new Delegates.ExceptionDelegate(_tcpManager_ExceptionOccured);
-        _tcpManager.TcpClientConnected += new Delegates.TcpClientDelegate(_tcpManager_TcpClientConnected);
-        _tcpManager.TcpDataReceived += new Delegates.TcpDataDelegate(_tcpManager_TcpDataReceived);
-        lblListenPort.Text = _tcpManager.ListeningPort.ToString();
+        _connManager = new ConnectionManager(LISTEN_PORT);
+        _connManager.ExceptionOccured += new Delegates.ExceptionDelegate(_tcpManager_ExceptionOccured);
+        _connManager.ConnectionEstablished += new Delegates.NetConnectionDelegate(_connManager_ConnectionEstablished);
+        _connManager.NetDataReceived += new Delegates.NetDataDelegate(_connManager_DataReceived);
+        lblListenPort.Text = _connManager.ListeningPort.ToString();
         AddLog("Started listening");
       }
       catch (Exception ex)
@@ -50,30 +50,31 @@ namespace CommLibTester
         Msgbox.Show(ex);
       }
     }
-    void _tcpManager_TcpClientConnected(System.Net.Sockets.TcpClient client)
+
+    void _connManager_ConnectionEstablished(NetConnection connection)
     {
       if (this.InvokeRequired)
       {
-        this.BeginInvoke(new MethodInvoker(delegate { _tcpManager_TcpClientConnected(client); }));
+        this.BeginInvoke(new MethodInvoker(delegate { _connManager_ConnectionEstablished(connection); }));
         return;
       }
-      
-      ConnectionControl ctl = new ConnectionControl(client);
+
+      ConnectionControl ctl = new ConnectionControl(connection);
       pnlConnections.Controls.Add(ctl);
-      AddLog(string.Format("Tcp connection established: {0} --> {1}", client.Client.LocalEndPoint.ToString(), client.Client.RemoteEndPoint.ToString()));
+      AddLog(string.Format("Tcp connection established: {0} --> {1}", connection.LocalEndPoint.ToString(), connection.RemoteEndPoint.ToString()));
     }
 
-    void _tcpManager_TcpDataReceived(System.Net.Sockets.TcpClient client, byte[] data)
+    void _connManager_DataReceived(NetConnection connection, byte[] data)
     {
       if (this.InvokeRequired)
       {
-        this.BeginInvoke(new MethodInvoker(delegate { _tcpManager_TcpDataReceived(client, data); }));
+        this.BeginInvoke(new MethodInvoker(delegate { _connManager_DataReceived(connection, data); }));
         return;
       }
 
       foreach (ConnectionControl ctl in pnlConnections.Controls)
       {
-        if (ctl.Client == client) ctl.DataReceived(data);
+        if (ctl.Connection == connection) ctl.DataReceived(data);
       }
     }
 
@@ -89,14 +90,14 @@ namespace CommLibTester
 
     private void frmTester_FormClosed(object sender, FormClosedEventArgs e)
     {
-      if (_tcpManager != null) _tcpManager.Close();
+      if (_connManager != null) _connManager.Close();
     }
 
     private void mnuNewLocalConnection_Click(object sender, EventArgs e)
     {
       try
       {
-        _tcpManager.Connect(IPAddress.Loopback, LISTEN_PORT);
+        _connManager.TcpConnect(IPAddress.Loopback, LISTEN_PORT);
       }
       catch (Exception ex)
       {

@@ -8,14 +8,14 @@ using System.Threading;
 
 namespace CommLib
 {
-  public class TcpManager
+  public class ConnectionManager
   {
     #region Variables
     private int _listeningPort = -1;
     TcpListener _listener = null;
     private Thread _worker = null;
-    private bool _shouldStop = true;
-    private List<TcpClient> _clients = new List<TcpClient>();
+    private bool _shouldAbort = true;
+    private List<NetConnection> _connections = new List<NetConnection>();
     #endregion Variables
 
     #region Properties
@@ -32,27 +32,33 @@ namespace CommLib
       if (ExceptionOccured != null) ExceptionOccured(ex);
     }
 
-    public event Delegates.TcpDataDelegate TcpDataReceived;
-    private void OnTcpDataReceived(TcpClient client, byte[] data)
+    public event Delegates.NetDataDelegate NetDataReceived;
+    private void OnNetDataReceived(NetConnection connection, byte[] data)
     {
-      if (TcpDataReceived != null) TcpDataReceived(client, data);
+      if (NetDataReceived != null) NetDataReceived(connection, data);
     }
 
-    public event Delegates.TcpClientDelegate TcpClientConnected;
-    private void OnTcpClientConnected(TcpClient client)
+    public event Delegates.NetConnectionDelegate ConnectionEstablished;
+    private void OnConnectionEstablished(NetConnection connection)
     {
-      if (TcpClientConnected != null) TcpClientConnected(client);
+      connection.DataReceived += new Delegates.NetDataDelegate(connection_DataReceived);
+      if (ConnectionEstablished != null) ConnectionEstablished(connection);
+    }
+
+    void connection_DataReceived(NetConnection client, byte[] data)
+    {
+      OnNetDataReceived(client, data);
     }
     #endregion Events
 
     #region Constructor
-    public TcpManager(int listeningPort)
+    public ConnectionManager(int listeningPort)
     {
       _listeningPort = listeningPort;
       _listener = new TcpListener(IPAddress.Any,listeningPort);
       _listener.Start();
 
-      _shouldStop = false;
+      _shouldAbort = false;
       ThreadStart start = new ThreadStart(Work);
       _worker = new Thread(start);
       _worker.Start();
@@ -69,12 +75,12 @@ namespace CommLib
 
       //For now, this closes all clients, but when control messages are implemented...
       //TODO: mark each client as Inbound/Outbound and close all outbound first, wait for a moment, and then close remaining inbound
-      foreach (TcpClient client in _clients)
+      foreach (NetConnection connection in _connections)
       {
-        client.Close();
+        connection.Close();
       }
 
-      _shouldStop = true;
+      _shouldAbort = true;
       _worker.Join(3000);
       if (_worker.ThreadState == ThreadState.Running) _worker.Interrupt();
       _worker = null;
@@ -82,7 +88,7 @@ namespace CommLib
 
     private void Work()
     {
-      while (!_shouldStop)
+      while (!_shouldAbort)
       {
         try
         {
@@ -90,23 +96,11 @@ namespace CommLib
           if (_listener.Pending())
           {
             TcpClient newClient = _listener.AcceptTcpClient();
-            _clients.Add(newClient);
-            OnTcpClientConnected(newClient);
+            NetConnection newConnection = new TcpConnection(newClient, ConnectionDirection.Inbound);
+            _connections.Add(newConnection);
+            OnConnectionEstablished(newConnection);
           }
           #endregion Handle listener
-
-          #region Handle connections
-          foreach (TcpClient client in _clients)
-          {
-            if (client.Available > 0)
-            {
-              byte[] data = new byte[client.Available];
-              client.Client.Receive(data);
-              OnTcpDataReceived(client, data);
-            }
-          }
-          #endregion Handle connections
-
           Thread.Sleep(1);
         }
         catch (ThreadInterruptedException)
@@ -120,12 +114,11 @@ namespace CommLib
       }
     }
 
-    public void Connect(IPAddress address, int port)
+    public void TcpConnect(IPAddress address, int port)
     {
-      TcpClient client = new TcpClient();
-      client.Connect(new IPEndPoint(address, port));
-      _clients.Add(client);
-      OnTcpClientConnected(client);
+      NetConnection newConnection = TcpConnection.ConnectNew(address, port);
+      _connections.Add(newConnection);
+      OnConnectionEstablished(newConnection);
     }
     #endregion Methods
   }

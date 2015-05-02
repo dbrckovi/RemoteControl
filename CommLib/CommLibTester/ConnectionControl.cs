@@ -14,11 +14,11 @@ namespace CommLibTester
 {
   public partial class ConnectionControl : UserControl
   {
-    private TcpClient _client = null;
+    private NetConnection _connection = null;
 
-    public TcpClient Client
+    public NetConnection Connection
     {
-      get { return _client; } 
+      get { return _connection; } 
     }
 
     #region Constructor
@@ -27,20 +27,20 @@ namespace CommLibTester
       InitializeComponent();
     }
 
-    public ConnectionControl(TcpClient client) : this()
+    public ConnectionControl(NetConnection connection) : this()
     {
-      _client = client;
+      _connection = connection;
     }
     #endregion Constructor
 
     private void Send()
     {
-      if (_client == null || txtSendBox.Text.Length == 0) return;
+      if (_connection == null || txtSendBox.Text.Length == 0) return;
       UnicodeEncoding enc = new UnicodeEncoding();
       byte[] data = enc.GetBytes(txtSendBox.Text);
       txtHistory.AppendText("  " + txtSendBox.Text + "\r\n", Color.Gray);
       txtSendBox.Text = "";
-      _client.Client.Send(data);
+      _connection.Send(data);
     }
 
     public void DataReceived(byte[] data)
@@ -62,10 +62,10 @@ namespace CommLibTester
 
     private void ConnectionControl_Load(object sender, EventArgs e)
     {
-      if (_client != null)
+      if (_connection != null)
       {
-        IPEndPoint localEP = (IPEndPoint)_client.Client.LocalEndPoint;
-        IPEndPoint remoteEP = (IPEndPoint)_client.Client.RemoteEndPoint;
+        IPEndPoint localEP = (IPEndPoint)_connection.LocalEndPoint;
+        IPEndPoint remoteEP = (IPEndPoint)_connection.RemoteEndPoint;
 
         lblLocalAddress.Text = localEP.Address.ToString();
         lblLocalPort.Text = localEP.Port.ToString();

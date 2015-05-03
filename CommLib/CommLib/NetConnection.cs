@@ -25,6 +25,13 @@ namespace CommLib
       if (ExceptionOccured != null) ExceptionOccured(ex);
     }
 
+    //TODO: Implement
+    public event Delegates.VoidDelegate ConnectionClosed;
+    private void OnConnectionClosed()
+    {
+      if (ConnectionClosed != null) ConnectionClosed();
+    }
+
     /// <summary>
     /// Raised when data is received
     /// </summary>

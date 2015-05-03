@@ -8,6 +8,7 @@ namespace CommLib
 {
   public static class Delegates
   {
+    public delegate void VoidDelegate();
     public delegate void ExceptionDelegate(Exception ex);
     public delegate void NetDataDelegate(NetConnection client, byte[] data);
     public delegate void NetConnectionDelegate(NetConnection client);
